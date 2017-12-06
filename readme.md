@@ -2,7 +2,7 @@
 
 ## Improvements
 
-Added the ability to work with multiple databases and multiple themes
+Add ability to work with multiple databases and multiple themes
 
 Updated listview for the translation blade
 
