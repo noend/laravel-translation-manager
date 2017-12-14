@@ -42,6 +42,7 @@ class Manager{
     public function importTranslations($replace = false)
     {
         $counter = 0;
+        $theme = config('themes.default', 'default');
 
         foreach ($this->files->directories($this->app['path.lang']) as $langPath) {
             $locale = basename($langPath);
@@ -49,6 +50,9 @@ class Manager{
                 $info = pathinfo($file);
                 $group = $info['filename'];
                 if (in_array($group, $this->config['exclude_groups'])) {
+                    continue;
+                }
+                if (in_array($group, ['vendor', 'themes'])) {
                     continue;
                 }
                 $subLangPath = str_replace($langPath . DIRECTORY_SEPARATOR, "", $info['dirname']);
@@ -64,6 +68,37 @@ class Manager{
                 }
             }
         }
+
+
+        foreach ($this->files->directories($this->app['path.lang']) as $langPath) {
+            $locale = basename($langPath);
+            foreach ($this->files->allfiles($langPath) as $file) {
+                $info = pathinfo($file);
+                $group = $info['filename'];
+                if (in_array($group, $this->config['exclude_groups'])) {
+                    continue;
+                }
+                if (in_array($group, ['vendor', 'themes'])) {
+                    continue;
+                }
+                $subLangPath = str_replace($langPath . DIRECTORY_SEPARATOR, "", $info['dirname']);
+                if ($subLangPath != $langPath) {
+                    $group = $subLangPath . "/" . $group;
+                }
+                //todo
+                $translations = \Lang::getLoader()->load($locale, $group, $theme);
+                if ($translations && is_array($translations)) {
+                    foreach (array_dot($translations) as $key => $value) {
+                        $importedTranslation = $this->importTranslation($key, $value, $locale, $group, $replace);
+                        $counter += $importedTranslation ? 1 : 0;
+                    }
+                }
+            }
+        }
+
+
+
+
 
         foreach ($this->files->files($this->app['path.lang']) as $jsonTranslationFile) {
             if (strpos($jsonTranslationFile, '.json') === false) {
