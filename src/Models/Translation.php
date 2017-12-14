@@ -17,6 +17,8 @@ use DB;
  */
 class Translation extends Model{
 
+    protected $connection = 'base';
+
     const STATUS_SAVED = 0;
     const STATUS_CHANGED = 1;
 
