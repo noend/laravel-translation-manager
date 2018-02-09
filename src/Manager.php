@@ -41,66 +41,67 @@ class Manager{
 
     public function importTranslations($replace = false)
     {
+
         $counter = 0;
         $theme = config('themes.default', 'default');
 
         foreach ($this->files->directories($this->app['path.lang']) as $langPath) {
             $locale = basename($langPath);
+
+            if (in_array($locale, ['vendor', 'themes'])) {
+                continue;
+            }
+
             foreach ($this->files->allfiles($langPath) as $file) {
                 $info = pathinfo($file);
                 $group = $info['filename'];
                 if (in_array($group, $this->config['exclude_groups'])) {
                     continue;
                 }
-                if (in_array($group, ['vendor', 'themes'])) {
-                    continue;
-                }
+
                 $subLangPath = str_replace($langPath . DIRECTORY_SEPARATOR, "", $info['dirname']);
+
                 if ($subLangPath != $langPath) {
                     $group = $subLangPath . "/" . $group;
                 }
                 $translations = \Lang::getLoader()->load($locale, $group);
-                if ($translations && is_array($translations)) {
+
+                if ($translations && is_array($translations) && count($translations) > 0) {
                     foreach (array_dot($translations) as $key => $value) {
                         $importedTranslation = $this->importTranslation($key, $value, $locale, $group, $replace);
                         $counter += $importedTranslation ? 1 : 0;
                     }
                 }
+
             }
         }
 
-
-        foreach ($this->files->directories($this->app['path.lang']) as $langPath) {
+        //DO THE SAME BUT ONLY FOR THE CURRENT THEME
+        foreach ($this->files->directories($this->app['path.lang'].'/themes/'.$theme) as $langPath) {
             $locale = basename($langPath);
+
             foreach ($this->files->allfiles($langPath) as $file) {
                 $info = pathinfo($file);
                 $group = $info['filename'];
                 if (in_array($group, $this->config['exclude_groups'])) {
                     continue;
                 }
-                if (in_array($group, ['vendor', 'themes'])) {
-                    continue;
-                }
+
                 $subLangPath = str_replace($langPath . DIRECTORY_SEPARATOR, "", $info['dirname']);
                 if ($subLangPath != $langPath) {
                     $group = $subLangPath . "/" . $group;
                 }
-
-                Lang::addNamespace('namespace', '/your/custom/location');
                 //todo
                 $translations = \Lang::getLoader()->load($locale, $group, $theme);
+
                 if ($translations && is_array($translations)) {
                     foreach (array_dot($translations) as $key => $value) {
-                        $importedTranslation = $this->importTranslation($key, $value, $locale, $group, $replace);
+                        $importedTranslation = $this->importTranslation($key, $value, $locale, $group, true);
                         $counter += $importedTranslation ? 1 : 0;
                     }
                 }
             }
         }
-
-
-
-
 
         foreach ($this->files->files($this->app['path.lang']) as $jsonTranslationFile) {
             if (strpos($jsonTranslationFile, '.json') === false) {
@@ -224,6 +225,9 @@ class Manager{
 
     public function exportTranslations($group = null, $json = false)
     {
+
+        $theme = config('themes.default', 'default');
+
         if (!is_null($group)) {
             if (!in_array($group, $this->config['exclude_groups'])) {
                 if ($group == '*')
@@ -234,9 +238,16 @@ class Manager{
                 foreach ($tree as $locale => $groups) {
                     if (isset($groups[$group])) {
                         $translations = $groups[$group];
-                        $path = $this->app['path.lang'] . '/' . $locale . '/' . $group . '.php';
+
+                        //$path = $this->app['path.lang'] . '/' . $locale . '/' . $group . '.php';
+                        $dir = $this->app['path.lang'] . '/themes/'. $theme .'/' . $locale . '/';
+                        if (!file_exists($dir)) {
+                            mkdir($dir, 0777, true);
+                        }
+                        $themePath =  $dir . $group . '.php';
+
                         $output = "<?php\n\nreturn " . var_export($translations, true) . ";\n";
-                        $this->files->put($path, $output);
+                        $this->files->put($themePath, $output);
                     }
                 }
                 Translation::ofTranslatedGroup($group)->update(array('status' => Translation::STATUS_SAVED));
