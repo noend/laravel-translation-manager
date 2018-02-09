@@ -85,6 +85,8 @@ class Manager{
                 if ($subLangPath != $langPath) {
                     $group = $subLangPath . "/" . $group;
                 }
+
+                Lang::addNamespace('namespace', '/your/custom/location');
                 //todo
                 $translations = \Lang::getLoader()->load($locale, $group, $theme);
                 if ($translations && is_array($translations)) {
