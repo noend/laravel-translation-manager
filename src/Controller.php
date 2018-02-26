@@ -63,10 +63,17 @@ class Controller extends BaseController
             ->get()
             ->pluck('locale');
 
-        if ($locales instanceof Collection) {
-            $locales = $locales->all();
+        /// if locales is set in ENV file get them instead defalt
+        if (!is_null(env('SUPPORTED_LOCALES')) && !empty(env('SUPPORTED_LOCALES')))
+        {
+            $locales = preg_split("/[,]/",env('SUPPORTED_LOCALES'));
+
+        } else {
+            if ($locales instanceof Collection) {
+                $locales = $locales->all();
+            }
+            $locales = array_merge(['en'], $locales);
         }
-        $locales = array_merge(['en'], $locales);
         return array_unique($locales);
     }
 
